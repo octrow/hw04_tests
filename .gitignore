@@ -1,3 +1,15 @@
+# Static
+yatube/static/
+yatube/static/css
+yatube/static/js
+
+# coverage
+htmlcov/
+.coverage
+.coverage.*
+coverage.xml
+*.cover 
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
@@ -26,6 +38,7 @@ share/python-wheels/
 .installed.cfg
 *.egg
 MANIFEST
+lefthook.yml
 
 # PyInstaller
 #  Usually these files are written by a python script from a template
