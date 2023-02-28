@@ -5,19 +5,9 @@ from django.conf import settings
 from django.test import Client, TestCase, override_settings
 
 from ..models import Group, Post, User
-from .const import (
-    AUTHOR,
-    GROUP_DESCRIPTION,
-    GROUP_DESCRIPTION_2,
-    GROUP_SLUG,
-    GROUP_SLUG_2,
-    GROUP_TITLE,
-    GROUP_TITLE_2,
-    POST_TEXT,
-    REVERSE_POST_CREATE,
-    REVERSE_POST_EDIT,
-    REVERSE_PROFILE,
-)
+from .const import (AUTHOR, GROUP_DESCRIPTION, GROUP_DESCRIPTION_2, GROUP_SLUG,
+                    GROUP_SLUG_2, GROUP_TITLE, GROUP_TITLE_2, POST_TEXT,
+                    REVERSE_POST_CREATE, REVERSE_POST_EDIT, REVERSE_PROFILE)
 
 TEMP_MEDIA_ROOT = tempfile.mkdtemp(dir=settings.BASE_DIR)
 

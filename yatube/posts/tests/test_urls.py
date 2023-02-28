@@ -3,21 +3,10 @@ from http import HTTPStatus
 from django.test import Client, TestCase
 
 from ..models import Group, Post, User
-from .const import (
-    ANOTHERUSER,
-    AUTHOR,
-    CREATE_URL,
-    EDIT_URL,
-    GROUP_DESCRIPTION,
-    GROUP_SLUG,
-    GROUP_TITLE,
-    GROUP_URL,
-    INDEX_URL,
-    POST_TEXT,
-    POST_URL,
-    PROFILE_URL,
-    UNEXISTING_URL,
-)
+from .const import (ANOTHERUSER, AUTHOR, CREATE_URL, EDIT_URL,
+                    GROUP_DESCRIPTION, GROUP_SLUG, GROUP_TITLE, GROUP_URL,
+                    INDEX_URL, POST_TEXT, POST_URL, PROFILE_URL,
+                    UNEXISTING_URL)
 
 
 class StaticURLTests(TestCase):

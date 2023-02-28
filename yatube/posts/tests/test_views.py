@@ -2,24 +2,11 @@ from django import forms
 from django.test import Client, TestCase
 
 from ..models import Group, Post, User
-from .const import (
-    AUTHOR,
-    GROUP_DESCRIPTION,
-    GROUP_DESCRIPTION_2,
-    GROUP_SLUG,
-    GROUP_SLUG_2,
-    GROUP_TITLE,
-    GROUP_TITLE_2,
-    POST_TEXT,
-    REVERSE_GROUP,
-    REVERSE_GROUP_2,
-    REVERSE_HOME,
-    REVERSE_POST_CREATE,
-    REVERSE_POST_DETAIL,
-    REVERSE_POST_EDIT,
-    REVERSE_PROFILE,
-    TEMPLATES_PAGES_NAMES,
-)
+from .const import (AUTHOR, GROUP_DESCRIPTION, GROUP_DESCRIPTION_2, GROUP_SLUG,
+                    GROUP_SLUG_2, GROUP_TITLE, GROUP_TITLE_2, POST_TEXT,
+                    REVERSE_GROUP, REVERSE_GROUP_2, REVERSE_HOME,
+                    REVERSE_POST_CREATE, REVERSE_POST_DETAIL,
+                    REVERSE_POST_EDIT, REVERSE_PROFILE, TEMPLATES_PAGES_NAMES)
 
 
 class TaskPagesTests(TestCase):
@@ -49,14 +36,14 @@ class TaskPagesTests(TestCase):
     def test_posts_urls_uses_correct_template(self):
         """URL-адрес использует соответствующий шаблон."""
         templates_pages_names = {
-            "posts/index.html": REVERSE_HOME,
-            "posts/group_list.html": REVERSE_GROUP,
-            "posts/profile.html": REVERSE_PROFILE,
-            "posts/post_detail.html": REVERSE_POST_DETAIL,
-            "posts/create_post.html": REVERSE_POST_CREATE,
-            "posts/create_post.html": REVERSE_POST_EDIT,
+            REVERSE_HOME: "posts/index.html",
+            REVERSE_GROUP: "posts/group_list.html",
+            REVERSE_PROFILE: "posts/profile.html",
+            REVERSE_POST_DETAIL: "posts/post_detail.html",
+            REVERSE_POST_CREATE: "posts/create_post.html",
+            REVERSE_POST_EDIT: "posts/create_post.html",
         }
-        for template, reverse_name in templates_pages_names.items():
+        for reverse_name, template in templates_pages_names.items():
             with self.subTest(reverse_name=reverse_name):
                 response = self.authorized_client.get(reverse_name)
                 self.assertTemplateUsed(response, template)
