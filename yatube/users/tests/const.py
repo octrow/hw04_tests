@@ -18,3 +18,11 @@ EDIT_URL = "/edit/"
 UNEXISTING_URL = "/unexisting_url/"
 
 REVERSE_SIGNUP = reverse("users:signup")
+USER_DATA = {
+    'first_name': 'Ivan',
+    'last_name': 'Ivanov',
+    'username': ANOTHERUSER,
+    'email': 'testuser@example.com',
+    'password1': 'testpassword',
+    'password2': 'testpassword'
+    }

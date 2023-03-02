@@ -1,12 +1,15 @@
 from django import forms
+from django.conf import settings
 from django.test import Client, TestCase
 
+from ..forms import PostForm
 from ..models import Group, Post, User
 from .const import (AUTHOR, GROUP_DESCRIPTION, GROUP_DESCRIPTION_2, GROUP_SLUG,
                     GROUP_SLUG_2, GROUP_TITLE, GROUP_TITLE_2, POST_TEXT,
-                    REVERSE_GROUP, REVERSE_GROUP_2, REVERSE_HOME,
+                    PUB_DATE, REVERSE_GROUP, REVERSE_GROUP_2, REVERSE_HOME,
                     REVERSE_POST_CREATE, REVERSE_POST_DETAIL,
-                    REVERSE_POST_EDIT, REVERSE_PROFILE, TEMPLATES_PAGES_NAMES)
+                    REVERSE_POST_EDIT, REVERSE_PROFILE, TEMPLATES_PAGES_NAMES,
+                    THIRTEEN)
 
 
 class TaskPagesTests(TestCase):
@@ -26,29 +29,33 @@ class TaskPagesTests(TestCase):
             text=POST_TEXT + "testpostcontent",
             author=cls.user,
             group=cls.group,
+            pub_date = PUB_DATE
         )
 
     def setUp(self):
-        self.guest_client = Client()
         self.authorized_client = Client()
         self.authorized_client.force_login(self.user)
 
-    def test_posts_urls_uses_correct_template(self):
-        """URL-адрес использует соответствующий шаблон."""
-        templates_pages_names = {
-            REVERSE_HOME: "posts/index.html",
-            REVERSE_GROUP: "posts/group_list.html",
-            REVERSE_PROFILE: "posts/profile.html",
-            REVERSE_POST_DETAIL: "posts/post_detail.html",
-            REVERSE_POST_CREATE: "posts/create_post.html",
-            REVERSE_POST_EDIT: "posts/create_post.html",
-        }
-        for reverse_name, template in templates_pages_names.items():
-            with self.subTest(reverse_name=reverse_name):
-                response = self.authorized_client.get(reverse_name)
-                self.assertTemplateUsed(response, template)
 
-    def test_three_pages_posts_show_correct_content(self):
+    def check_context(self, query, is_post=False):
+        response = self.authorized_client.get(query)
+        if is_post:
+            post = response.context["post"]
+            self.assertEqual(post.id, self.post.pk)
+            self.assertEqual(post.text, self.post.text)
+            self.assertEqual(post.author.username, self.user.username)
+            self.assertEqual(post.group.title, self.group.title)
+            self.assertEqual(post.pub_date, self.post.pub_date)
+        else:
+            page_obj = response.context["page_obj"][0]
+            self.assertEqual(page_obj.id, self.post.pk)
+            self.assertEqual(page_obj.text, self.post.text)
+            self.assertEqual(page_obj.author.username, self.user.username)
+            self.assertEqual(page_obj.group.title, self.group.title)
+            self.assertEqual(page_obj.pub_date, self.post.pub_date)
+
+
+    def test_index_grouplist_profile_show_correct_content(self):
         """Шаблоны index, group_list, profile
         сформированы с правильным контекстом."""
         templates_pages_names = [
@@ -58,25 +65,12 @@ class TaskPagesTests(TestCase):
         ]
         for reverse_name in templates_pages_names:
             with self.subTest(reverse_name=reverse_name):
-                response = self.authorized_client.get(reverse_name)
-                first_object = response.context["page_obj"][0]
-                self.assertEqual(first_object.id, self.post.pk)
-                self.assertEqual(first_object.text, self.post.text)
-                self.assertEqual(
-                    first_object.author.username, self.user.username
-                )
-                self.assertEqual(first_object.group.title, self.group.title)
+                self.check_context(reverse_name)
 
     def test_post_detail_show_correct_content(self):
         """Шаблон post_detail.html сформирован с правильным контекстом."""
-        response = self.authorized_client.get(REVERSE_POST_DETAIL)
-        self.assertEqual(response.context["post"].text, self.post.text)
-        self.assertEqual(
-            response.context["post"].author.username, self.user.username
-        )
-        self.assertEqual(
-            response.context["post"].group.title, self.group.title
-        )
+        self.check_context(REVERSE_POST_DETAIL, True)
+        
 
     def test_create_post_and_post_edit_show_correct_content(self):
         """Шаблон create_post.html сформированы с правильным контекстом."""
@@ -91,6 +85,8 @@ class TaskPagesTests(TestCase):
         for page in templates_name_pages:
             with self.subTest(page=page):
                 response = self.authorized_client.get(page)
+                self.assertIn("form", response.context)
+                self.assertIsInstance(response.context["form"], PostForm)
                 for field, field_type in form_fields.items():
                     with self.subTest(field=field):
                         form_field = response.context["form"].fields[field]
@@ -113,24 +109,25 @@ class PaginatorViewsTest(TestCase):
             slug=GROUP_SLUG,
             description=GROUP_DESCRIPTION,
         )
-        for i in range(13):
-            cls.post = Post.objects.create(
-                text=POST_TEXT + " " + str(i),
+        posts13 = []
+        for i in range(THIRTEEN):
+            post1 = Post(
+                text=POST_TEXT + "проверка пагинатора номер " + str(i),
                 author=cls.user,
                 group=cls.group,
             )
+            posts13.append(post1)
+        Post.objects.bulk_create(posts13)
 
-    def setUp(self):
-        self.guest_client = Client()
 
     def test_first_page_contains_ten_records(self):
         for reverse_names in TEMPLATES_PAGES_NAMES:
             with self.subTest(reverse_name=reverse_names):
-                response = self.guest_client.get(reverse_names)
-                self.assertEqual(len(response.context["page_obj"]), 10)
+                response = self.client.get(reverse_names)
+                self.assertEqual(len(response.context["page_obj"]), settings.PAGINATION_ITEMS_PER_PAGE)
 
     def test_second_page_contains_three_records(self):
         for reverse_names in TEMPLATES_PAGES_NAMES:
             with self.subTest(reverse_name=reverse_names):
-                response = self.guest_client.get(reverse_names + "?page=2")
-                self.assertEqual(len(response.context["page_obj"]), 3)
+                response = self.client.get(reverse_names + "?page=2")
+                self.assertEqual(len(response.context["page_obj"]), THIRTEEN - settings.PAGINATION_ITEMS_PER_PAGE)
