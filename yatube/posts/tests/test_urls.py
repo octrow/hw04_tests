@@ -3,30 +3,12 @@ from http import HTTPStatus
 from django.test import Client, TestCase
 
 from ..models import Group, Post, User
-from .const import (
-    ANOTHERUSER,
-    AUTHOR,
-    CREATE_URL,
-    EDIT_URL,
-    GROUP_DESCRIPTION,
-    GROUP_SLUG,
-    GROUP_TITLE,
-    GROUP_URL,
-    INDEX_URL,
-    POST_1_EDIT_URL,
-    POST_1_URL,
-    POST_TEXT,
-    POST_URL,
-    PROFILE_URL,
-    REVERSE_GROUP,
-    REVERSE_HOME,
-    REVERSE_LOGIN,
-    REVERSE_POST_CREATE,
-    REVERSE_POST_DETAIL,
-    REVERSE_POST_EDIT,
-    REVERSE_PROFILE,
-    UNEXISTING_URL,
-)
+from .const import (ANOTHERUSER, AUTHOR, CREATE_URL, GROUP_DESCRIPTION,
+                    GROUP_SLUG, GROUP_TITLE, GROUP_URL, INDEX_URL,
+                    POST_1_EDIT_URL, POST_1_URL, POST_TEXT, PROFILE_URL,
+                    REVERSE_GROUP, REVERSE_HOME, REVERSE_LOGIN,
+                    REVERSE_POST_CREATE, REVERSE_POST_DETAIL,
+                    REVERSE_POST_EDIT, REVERSE_PROFILE, UNEXISTING_URL)
 
 
 class StaticURLTests(TestCase):

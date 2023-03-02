@@ -29,13 +29,12 @@ class TaskPagesTests(TestCase):
             text=POST_TEXT + "testpostcontent",
             author=cls.user,
             group=cls.group,
-            pub_date = PUB_DATE
+            pub_date=PUB_DATE,
         )
 
     def setUp(self):
         self.authorized_client = Client()
         self.authorized_client.force_login(self.user)
-
 
     def check_context(self, query, is_post=False):
         response = self.authorized_client.get(query)
@@ -54,7 +53,6 @@ class TaskPagesTests(TestCase):
             self.assertEqual(page_obj.group.title, self.group.title)
             self.assertEqual(page_obj.pub_date, self.post.pub_date)
 
-
     def test_index_grouplist_profile_show_correct_content(self):
         """Шаблоны index, group_list, profile
         сформированы с правильным контекстом."""
@@ -70,7 +68,6 @@ class TaskPagesTests(TestCase):
     def test_post_detail_show_correct_content(self):
         """Шаблон post_detail.html сформирован с правильным контекстом."""
         self.check_context(REVERSE_POST_DETAIL, True)
-        
 
     def test_create_post_and_post_edit_show_correct_content(self):
         """Шаблон create_post.html сформированы с правильным контекстом."""
@@ -119,15 +116,20 @@ class PaginatorViewsTest(TestCase):
             posts13.append(post1)
         Post.objects.bulk_create(posts13)
 
-
     def test_first_page_contains_ten_records(self):
         for reverse_names in TEMPLATES_PAGES_NAMES:
             with self.subTest(reverse_name=reverse_names):
                 response = self.client.get(reverse_names)
-                self.assertEqual(len(response.context["page_obj"]), settings.PAGINATION_ITEMS_PER_PAGE)
+                self.assertEqual(
+                    len(response.context["page_obj"]),
+                    settings.PAGINATION_ITEMS_PER_PAGE,
+                )
 
     def test_second_page_contains_three_records(self):
         for reverse_names in TEMPLATES_PAGES_NAMES:
             with self.subTest(reverse_name=reverse_names):
                 response = self.client.get(reverse_names + "?page=2")
-                self.assertEqual(len(response.context["page_obj"]), THIRTEEN - settings.PAGINATION_ITEMS_PER_PAGE)
+                self.assertEqual(
+                    len(response.context["page_obj"]),
+                    THIRTEEN - settings.PAGINATION_ITEMS_PER_PAGE,
+                )

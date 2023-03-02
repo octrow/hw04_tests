@@ -30,12 +30,10 @@ class PostCreateFormTests(TestCase):
             group=cls.group,
         )
 
-
     def setUp(self):
         self.guest_client = Client()
         self.authorized_client = Client()
         self.authorized_client.force_login(self.user)
-
 
     def test_create_post_form_valid_data(self):
         """Форма создает пост в указанном группе."""
@@ -81,10 +79,9 @@ class PostCreateFormTests(TestCase):
             "text": POST_TEXT,
             "group": self.group.id,
         }
-        response = self.guest_client.post(
+        self.guest_client.post(
             REVERSE_POST_CREATE, data=form_data, follow=True
         )
-        # self.assertNotEqual(response.status_code, HTTPStatus.OK)
         self.assertEqual(Post.objects.count(), posts_count)
 
     def test_access_post_edit(self):
