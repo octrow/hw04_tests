@@ -24,7 +24,7 @@ class PostCreateFormTests(TestCase):
             slug=GROUP_SLUG_2,
             description=GROUP_DESCRIPTION_2,
         )
-        Post.objects.create(
+        cls.post = Post.objects.create(
             author=cls.user,
             text=POST_TEXT,
             group=cls.group,
@@ -37,6 +37,7 @@ class PostCreateFormTests(TestCase):
 
     def test_create_post_form_valid_data(self):
         """Форма создает пост в указанном группе."""
+        Post.objects.all().delete()
         form_data = {
             "text": POST_TEXT,
             "group": self.group.id,
@@ -46,11 +47,11 @@ class PostCreateFormTests(TestCase):
             data=form_data,
             follow=True,
         )
-        post = Post.objects.get(id=Post.objects.latest("id").id)
+        post = Post.objects.first()
         self.assertRedirects(response, REVERSE_PROFILE)
         self.assertEqual(post.author, self.user)
-        self.assertEqual(post.group, self.group)
-        self.assertEqual(post.text, POST_TEXT)
+        self.assertEqual(post.group.id, form_data["group"])
+        self.assertEqual(post.text, form_data["text"])
 
     def test_edit_post_correct(self):
         posts_count = Post.objects.count()
@@ -63,10 +64,10 @@ class PostCreateFormTests(TestCase):
             data=form_data,
             follow=True,
         )
-        post = Post.objects.get(id=Post.objects.latest("id").id)
-        self.assertEqual(post.author, self.user)
-        self.assertEqual(post.group.id, self.group_2.id)
-        self.assertEqual(post.text, POST_TEXT + "отредактированный")
+        post = Post.objects.first()
+        self.assertEqual(post.author, self.post.author)
+        self.assertEqual(post.group.id, form_data["group"])
+        self.assertEqual(post.text, form_data["text"])
         self.assertEqual(Post.objects.count(), posts_count)
         response = self.authorized_client.get(REVERSE_GROUP)
         self.assertEqual(response.status_code, HTTPStatus.OK)
@@ -95,5 +96,5 @@ class PostCreateFormTests(TestCase):
             data=form_data,
             follow=True,
         )
-        post = Post.objects.get(id=Post.objects.latest("id").id)
-        self.assertNotEqual(post.text, POST_TEXT + "невозможный")
+        post = Post.objects.first()
+        self.assertNotEqual(post.text, form_data["text"])
