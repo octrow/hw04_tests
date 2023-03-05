@@ -1,15 +1,22 @@
+import shutil
+import tempfile
+
 from django import forms
 from django.conf import settings
-from django.test import Client, TestCase
+from django.core.files.uploadedfile import SimpleUploadedFile
+from django.test import Client, TestCase, override_settings
 from django.urls import reverse
 
 from ..forms import PostForm
-from ..models import Group, Post, User
-from .const import (AUTHOR, GROUP_DESCRIPTION, GROUP_DESCRIPTION_2, GROUP_SLUG,
-                    GROUP_SLUG_2, GROUP_TITLE, GROUP_TITLE_2, POST_TEXT,
-                    PUB_DATE, THIRTEEN)
+from ..models import Comment, Group, Post, User
+from .const import (AUTHOR, COMMENT_TEXT, GROUP_DESCRIPTION,
+                    GROUP_DESCRIPTION_2, GROUP_SLUG, GROUP_SLUG_2, GROUP_TITLE,
+                    GROUP_TITLE_2, POST_TEXT, PUB_DATE, THIRTEEN)
+
+TEMP_MEDIA_ROOT = tempfile.mkdtemp(dir=settings.BASE_DIR)
 
 
+@override_settings(MEDIA_ROOT=TEMP_MEDIA_ROOT)
 class TaskPagesTests(TestCase):
     @classmethod
     def setUpClass(cls):
@@ -17,6 +24,17 @@ class TaskPagesTests(TestCase):
         cls.user = User.objects.create_user(username=AUTHOR)
         cls.group = Group.objects.create(
             title=GROUP_TITLE, slug=GROUP_SLUG, description=GROUP_DESCRIPTION
+        )
+        cls.small_gif = (
+            b"\x47\x49\x46\x38\x39\x61\x02\x00"
+            b"\x01\x00\x80\x00\x00\x00\x00\x00"
+            b"\xFF\xFF\xFF\x21\xF9\x04\x00\x00"
+            b"\x00\x00\x00\x2C\x00\x00\x00\x00"
+            b"\x02\x00\x01\x00\x00\x02\x02\x0C"
+            b"\x0A\x00\x3B"
+        )
+        cls.image_upload = SimpleUploadedFile(
+            name="small.gif", content=cls.small_gif, content_type="image/gif"
         )
         cls.group_2 = Group.objects.create(
             title=GROUP_TITLE_2,
@@ -28,7 +46,18 @@ class TaskPagesTests(TestCase):
             author=cls.user,
             group=cls.group,
             pub_date=PUB_DATE,
+            image=cls.image_upload,
         )
+        cls.comment = Comment.objects.create(
+            post=cls.post,
+            author=cls.user,
+            text=COMMENT_TEXT,
+        )
+
+    @classmethod
+    def tearDownClass(cls):
+        super().tearDownClass()
+        shutil.rmtree(TEMP_MEDIA_ROOT, ignore_errors=True)
 
     def setUp(self):
         self.authorized_client = Client()
@@ -44,12 +73,13 @@ class TaskPagesTests(TestCase):
         self.assertEqual(post.author.id, self.user.id)
         self.assertEqual(post.group, self.group)
         self.assertEqual(post.pub_date, self.post.pub_date)
+        self.assertEqual(post.image, f"posts/{self.image_upload}")
 
     def test_index_grouplist_profile_show_correct_content(self):
         """Шаблоны index, group_list, profile
         сформированы с правильным контекстом."""
         pages_name = (
-            ("posts:index", (None)),
+            ("posts:index", None),
             ("posts:group_list", (self.group.slug,)),
             ("posts:profile", (self.user.username,)),
         )
@@ -69,12 +99,16 @@ class TaskPagesTests(TestCase):
         response = self.authorized_client.get(
             reverse("posts:post_detail", args=(self.post.id,))
         )
+        # form_fields = {
+        #     "text": forms.fields.CharField,
+        # }
         self.check_context(response, True)
+        self.assertEqual(response.context["comments"][0], self.comment)
 
     def test_create_post_and_post_edit_show_correct_content(self):
         """Шаблон create_post.html сформированы с правильным контекстом."""
         templates_name_pages = (
-            ("posts:post_create", (None)),
+            ("posts:post_create", None),
             ("posts:post_edit", (self.post.id,)),
         )
         form_fields = {
@@ -126,7 +160,7 @@ class PaginatorViewsTest(TestCase):
 
     def test_first_page_contains_ten_records(self):
         pages_name = (
-            ("posts:index", (None)),
+            ("posts:index", None),
             ("posts:group_list", (self.group.slug,)),
             ("posts:profile", (self.user.username,)),
         )

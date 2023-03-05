@@ -9,6 +9,7 @@ GROUP_TITLE_2 = "Тестовая группа два"
 GROUP_SLUG_2 = "test_slug_two"
 GROUP_DESCRIPTION_2 = "Тестовое описание два"
 POST_TEXT = "Тестовая запись длинной больше пятнадцати символов"
+COMMENT_TEXT = 'Первый комментарий'
 PUB_DATE = "2020-01-01"
 THIRTEEN = 13
 

@@ -9,7 +9,11 @@ ALLOWED_HOSTS = [
     '[::1]',
     'testserver',
 ]
+# Static files (CSS, JavaScript, Images)
+# https://docs.djangoproject.com/en/2.2/howto/static-files/
 
+MEDIA_URL = '/media/'
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 INSTALLED_APPS = [
     "about.apps.AboutConfig",
@@ -22,6 +26,7 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
+    "sorl.thumbnail",
 ]
 
 MIDDLEWARE = [
@@ -85,6 +90,8 @@ USE_I18N = True
 USE_L10N = True
 
 USE_TZ = False
+
+CSRF_FAILURE_VIEW = 'core.views.csrf_failure'
 
 NUM_POSTS = 10
 

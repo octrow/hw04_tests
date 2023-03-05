@@ -30,7 +30,7 @@ class StaticURLTests(TestCase):
         self.another_authorized_client = Client()
         self.another_authorized_client.force_login(StaticURLTests.anotheruser)
         self.urls_names = (
-            ("posts:index", (None), "/"),
+            ("posts:index", None, "/"),
             (
                 "posts:group_list",
                 (self.group.slug,),
@@ -42,7 +42,7 @@ class StaticURLTests(TestCase):
                 f"/profile/{self.user.username}/",
             ),
             ("posts:post_detail", (self.post.id,), f"/posts/{self.post.id}/"),
-            ("posts:post_create", (None), "/create/"),
+            ("posts:post_create", None, "/create/"),
             (
                 "posts:post_edit",
                 (self.post.id,),
@@ -59,11 +59,11 @@ class StaticURLTests(TestCase):
     def test_urls_uses_correct_template(self):
         """URL-адрес использует соответствующий шаблон."""
         templates_url_names = (
-            ("posts:index", (None), "posts/index.html"),
+            ("posts:index", None, "posts/index.html"),
             ("posts:group_list", (self.group.slug,), "posts/group_list.html"),
             ("posts:profile", (self.user.username,), "posts/profile.html"),
             ("posts:post_detail", (self.post.id,), "posts/post_detail.html"),
-            ("posts:post_create", (None), "posts/create_post.html"),
+            ("posts:post_create", None, "posts/create_post.html"),
             ("posts:post_edit", (self.post.id,), "posts/create_post.html"),
         )
         for reverse_url, argument, template in templates_url_names:
@@ -106,11 +106,11 @@ class StaticURLTests(TestCase):
         names_list = ["posts:post_edit", "posts:post_create"]
         for reverse_url, argument, _ in self.urls_names:
             response = self.client.get(reverse(reverse_url, args=argument))
+            reverse_login = reverse('users:login')
             if reverse_url not in names_list:
                 with self.subTest(reverse_url=reverse_url):
                     self.assertEqual(response.status_code, HTTPStatus.OK)
             else:
-                excepted_redirect_1 = f"{reverse('users:login')}?next="
-                excepted_redirect_2 = f"{reverse(reverse_url, args=argument)}"
-                excepted_redirect = excepted_redirect_1 + excepted_redirect_2
+                url_argument = reverse(reverse_url, args=argument)
+                excepted_redirect = f'{reverse_login}?next={url_argument}'
                 self.assertRedirects(response, excepted_redirect)

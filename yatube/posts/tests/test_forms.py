@@ -1,14 +1,21 @@
+import shutil
+import tempfile
 from http import HTTPStatus
 
-from django.test import Client, TestCase
+from django.conf import settings
+from django.core.files.uploadedfile import SimpleUploadedFile
+from django.test import Client, TestCase, override_settings
+from django.urls import reverse
 
-from ..models import Group, Post, User
-from .const import (AUTHOR, GROUP_DESCRIPTION, GROUP_DESCRIPTION_2, GROUP_SLUG,
-                    GROUP_SLUG_2, GROUP_TITLE, GROUP_TITLE_2, POST_TEXT,
-                    REVERSE_GROUP, REVERSE_POST_CREATE, REVERSE_POST_EDIT,
-                    REVERSE_PROFILE)
+from ..models import Comment, Group, Post, User
+from .const import (AUTHOR, COMMENT_TEXT, GROUP_DESCRIPTION,
+                    GROUP_DESCRIPTION_2, GROUP_SLUG, GROUP_SLUG_2, GROUP_TITLE,
+                    GROUP_TITLE_2, POST_TEXT)
+
+TEMP_MEDIA_ROOT = tempfile.mkdtemp(dir=settings.BASE_DIR)
 
 
+@override_settings(MEDIA_ROOT=TEMP_MEDIA_ROOT)
 class PostCreateFormTests(TestCase):
     @classmethod
     def setUpClass(cls):
@@ -30,6 +37,11 @@ class PostCreateFormTests(TestCase):
             group=cls.group,
         )
 
+    @classmethod
+    def tearDownClass(cls):
+        super().tearDownClass()
+        shutil.rmtree(TEMP_MEDIA_ROOT, ignore_errors=True)
+
     def setUp(self):
         self.guest_client = Client()
         self.authorized_client = Client()
@@ -38,20 +50,64 @@ class PostCreateFormTests(TestCase):
     def test_create_post_form_valid_data(self):
         """Форма создает пост в указанном группе."""
         Post.objects.all().delete()
+        count_posts = Post.objects.count()
+        small_gif = (
+            b"\x47\x49\x46\x38\x39\x61\x01\x00"
+            b"\x01\x00\x00\x00\x00\x21\xf9\x04"
+            b"\x01\x0a\x00\x01\x00\x2c\x00\x00"
+            b"\x00\x00\x01\x00\x01\x00\x00\x02"
+            b"\x02\x4c\x01\x00\x3b"
+        )
+        image_upload = SimpleUploadedFile(
+            name="small.gif", content=small_gif, content_type="image/gif"
+        )
         form_data = {
             "text": POST_TEXT,
             "group": self.group.id,
+            "image": image_upload,
         }
         response = self.authorized_client.post(
-            REVERSE_POST_CREATE,
+            reverse("posts:post_create"),
             data=form_data,
             follow=True,
         )
         post = Post.objects.first()
-        self.assertRedirects(response, REVERSE_PROFILE)
+        self.assertRedirects(
+            response, reverse("posts:profile", args=(self.user.username,))
+        )
         self.assertEqual(post.author, self.user)
         self.assertEqual(post.group.id, form_data["group"])
         self.assertEqual(post.text, form_data["text"])
+        self.assertEqual(post.image.name, "posts/small.gif")
+        self.assertTrue(
+            Post.objects.filter(
+                text=POST_TEXT,
+                author=self.user,
+                group=self.group,
+                image="posts/small.gif",
+            ).exists()
+        )
+        self.assertEqual(Post.objects.count(), count_posts + 1)
+
+    def test_create_comment_authorizet(self):
+        """Форма создает комментарий в указанном посте."""
+        Comment.objects.all().delete()
+        form_data = {
+            "text": COMMENT_TEXT,
+            "author": self.user.id,
+            "post": self.post.id,
+        }
+        response = self.authorized_client.post(
+            reverse("posts:add_comment", args=(self.post.id,)),
+            data=form_data,
+            follow=True,
+        )
+        comment = Comment.objects.first()
+        self.assertRedirects(
+            response, reverse("posts:post_detail", args=(form_data["post"],))
+        )
+        self.assertEqual(comment.text, form_data["text"])
+        self.assertEqual(comment.author.id, self.user.id)
 
     def test_edit_post_correct(self):
         posts_count = Post.objects.count()
@@ -60,7 +116,7 @@ class PostCreateFormTests(TestCase):
             "group": self.group_2.id,
         }
         self.authorized_client.post(
-            REVERSE_POST_EDIT,
+            reverse("posts:post_edit", args=[1]),
             data=form_data,
             follow=True,
         )
@@ -69,7 +125,9 @@ class PostCreateFormTests(TestCase):
         self.assertEqual(post.group.id, form_data["group"])
         self.assertEqual(post.text, form_data["text"])
         self.assertEqual(Post.objects.count(), posts_count)
-        response = self.authorized_client.get(REVERSE_GROUP)
+        response = self.authorized_client.get(
+            reverse("posts:group_list", args=[GROUP_SLUG])
+        )
         self.assertEqual(response.status_code, HTTPStatus.OK)
         self.assertEqual(len(response.context["page_obj"]), 0)
 
@@ -81,7 +139,7 @@ class PostCreateFormTests(TestCase):
             "group": self.group.id,
         }
         self.guest_client.post(
-            REVERSE_POST_CREATE, data=form_data, follow=True
+            reverse("posts:post_create"), data=form_data, follow=True
         )
         self.assertEqual(Post.objects.count(), posts_count)
 
@@ -92,7 +150,7 @@ class PostCreateFormTests(TestCase):
             "group": self.group_2.id,
         }
         self.guest_client.post(
-            REVERSE_POST_EDIT,
+            reverse("posts:post_edit", args=[1]),
             data=form_data,
             follow=True,
         )

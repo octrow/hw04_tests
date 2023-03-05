@@ -1,7 +1,7 @@
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import get_object_or_404, redirect, render
 
-from .forms import PostForm
+from .forms import CommentForm, PostForm
 from .models import Group, Post, User
 from .paginate_utils import paginate_posts
 
@@ -17,7 +17,7 @@ def index(request):
 
 def group_posts(request, slug):
     group = get_object_or_404(Group, slug=slug)
-    post_list = group.posts.select_related('author')
+    post_list = group.posts.select_related("author")
     page_obj = paginate_posts(post_list, request)
     context = {
         "group": group,
@@ -28,7 +28,7 @@ def group_posts(request, slug):
 
 def profile(request, username):
     author = get_object_or_404(User, username=username)
-    posts = author.posts.select_related('group')
+    posts = author.posts.select_related("group")
     post_count = posts.count()
     page_obj = paginate_posts(posts, request)
     context = {
@@ -43,6 +43,8 @@ def post_detail(request, post_id):
     post = get_object_or_404(Post, pk=post_id)
     context = {
         "post": post,
+        "comments": post.comments.select_related("author"),
+        "comment_form": CommentForm(),
     }
     return render(request, "posts/post_detail.html", context)
 
@@ -58,7 +60,7 @@ def post_delete(request, post_id):
 
 @login_required
 def post_create(request):
-    form = PostForm(request.POST or None)
+    form = PostForm(request.POST or None, files=request.FILES or None)
     if not form.is_valid():
         context = {
             "form": form,
@@ -75,11 +77,11 @@ def post_edit(request, post_id):
     post = get_object_or_404(Post, pk=post_id)
     if request.user != post.author:
         return redirect("posts:post_detail", post_id=post.id)
-    form = PostForm(request.POST or None, instance=post)
+    form = PostForm(
+        request.POST or None, files=request.FILES or None, instance=post
+    )
     if not form.is_valid():
-        context = {
-            "form": form
-        }
+        context = {"form": form}
         return render(request, "posts/create_post.html", context)
     form.save()
     return redirect("posts:post_detail", post_id=post.id)
@@ -92,3 +94,18 @@ def post_delete(request, post_id):
         post.delete()
         return redirect("posts:profile", username=request.user.username)
     return redirect("posts:post_detail", post_id=post.id)
+
+
+@login_required
+def add_comment(request, post_id):
+    form = CommentForm(request.POST or None)
+    if not form.is_valid():
+        context = {
+            "form": form,
+        }
+        return render(request, ("posts:post_detail", post_id), context)
+    comment = form.save(commit=False)
+    comment.author = request.user
+    comment.post = get_object_or_404(Post, pk=post_id)
+    comment.save()
+    return redirect("posts:post_detail", post_id=post_id)
