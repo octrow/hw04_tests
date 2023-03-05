@@ -2,6 +2,7 @@
 yatube/static/
 yatube/static/css
 yatube/static/js
+yatube/media/
 
 # coverage
 htmlcov/
@@ -73,6 +74,7 @@ coverage.xml
 local_settings.py
 db.sqlite3
 db.sqlite3-journal
+yatube/.dbeaver
 
 # Flask stuff:
 instance/
